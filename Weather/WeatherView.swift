@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  WeatherView.swift
 //  Weather
 //
 //  Created by Lou Allen Uy Sison on 11/21/21.
@@ -7,7 +7,9 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct WeatherView: View {
+    
+    @ObservedObject var viewModel: WeatherViewModel
     
     @State private var isNight = false
     
@@ -15,10 +17,10 @@ struct ContentView: View {
         ZStack {
             BackgroundView(isNight: $isNight)
             VStack {
-                CityTextView(cityName: "Manila, PH")
+                CityTextView(cityName: viewModel.cityName)
                 
-                MainWeatherStatusView(imageName: isNight ? "moon.stars.fill" : "cloud.sun.fill",
-                                      temperature: 33)
+                MainWeatherStatusView(imageName: viewModel.weatherIcon,
+                                      temperature: viewModel.temperature)
                 
                 HStack(spacing: 20) {
                     WeatherDayView(dayOfWeek: "TUE",
@@ -51,14 +53,14 @@ struct ContentView: View {
                 }
                 
                 Spacer()
-            }
+            }.onAppear(perform: viewModel.refresh)
         }
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        WeatherView(viewModel: WeatherViewModel(weatherService: WeatherService()))
     }
 }
 
@@ -112,17 +114,17 @@ struct CityTextView: View {
 struct MainWeatherStatusView: View {
     
     var imageName: String
-    var temperature: Int
+    var temperature: String
     
     var body: some View {
         VStack(spacing: 8) {
-            Image(systemName: imageName)
+            Image(imageName)
                 .renderingMode(.original)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 180, height: 180)
             
-            Text("\(temperature)°")
+            Text(temperature)
                 .font(.system(size: 70, weight: .medium))
                 .foregroundColor(.white)
         }
