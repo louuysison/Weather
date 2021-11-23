@@ -9,9 +9,11 @@ import Foundation
 
 public class WeatherViewModel: ObservableObject {
     @Published var cityName: String = "City Name"
-    @Published var temperature: String = "--"
+    @Published var temperature: Double = 0.0
     @Published var description: String = "--"
-    @Published var weatherIcon: String = "sun.max.fill"
+    @Published var weatherIcon: String = "c01d"
+    @Published var dateToday: String = "2000-01-01"
+    @Published var days: [DayEntry] = []
     
     public let weatherService: WeatherService
     
@@ -23,9 +25,11 @@ public class WeatherViewModel: ObservableObject {
         weatherService.loadWeatherData { weather in
             DispatchQueue.main.async {
                 self.cityName = weather.city
-                self.temperature = "\(weather.temperature)°C"
+                self.temperature = weather.temperature
                 self.description = weather.description.capitalized
                 self.weatherIcon = weather.iconName
+                self.dateToday = weather.dateToday
+                self.days = weather.resp.data
             }
         }
     }

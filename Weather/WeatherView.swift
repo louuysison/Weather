@@ -11,48 +11,46 @@ struct WeatherView: View {
     
     @ObservedObject var viewModel: WeatherViewModel
     
-    @State private var isNight = false
+    @State private var selectedIndex = 0
     
     var body: some View {
         ZStack {
-            BackgroundView(isNight: $isNight)
+            BackgroundView()
             VStack {
-                CityTextView(cityName: viewModel.cityName)
                 
-                MainWeatherStatusView(imageName: viewModel.weatherIcon,
-                                      temperature: viewModel.temperature)
-                
-                HStack(spacing: 20) {
-                    WeatherDayView(dayOfWeek: "TUE",
-                                   imageName: "cloud.sun.fill",
-                                   temperature: 74)
-                    
-                    WeatherDayView(dayOfWeek: "WED",
-                                   imageName: "sun.max.fill",
-                                   temperature: 88)
-                    
-                    WeatherDayView(dayOfWeek: "THU",
-                                   imageName: "wind",
-                                   temperature: 55)
-                    
-                    WeatherDayView(dayOfWeek: "FRI",
-                                   imageName: "sunset.fill",
-                                   temperature: 60)
-                    
-                    WeatherDayView(dayOfWeek: "SAT",
-                                   imageName: "cloud.drizzle.fill",
-                                   temperature: 74)
-                    
+                // if viewModal data is loaded, show UI, else show ProgressView
+                if viewModel.days.count > 0 {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        WhiteTextWithPadding(text: viewModel.cityName)
+                        
+                        let selectedDay = viewModel.days[selectedIndex]
+                        
+                        WhiteTextWithPadding(text: selectedDay.valid_date)
+                        
+                        MainWeatherStatusView(imageName: selectedDay.weather.icon,
+                                              description: selectedDay.weather.description,
+                                              temperature: selectedDay.temp)
+                        
+                        AdditionalInfoView(selectedDay: selectedDay)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 30) {
+                                ForEach(0..<10, id: \.self) { index in
+                                    Button {
+                                        selectedIndex = index
+                                    } label: {
+                                        WeatherDayView(dayOfWeek: viewModel.days[index].dayOfWeek,
+                                                       imageName: viewModel.days[index].weather.icon,
+                                                       temperature: viewModel.days[index].temp
+                                        )
+                                    }.frame(height: 180)
+                                }
+                            }.padding(.leading, 15)
+                        }.frame(height: 200)
+                    }
+                } else {
+                    ProgressView()
                 }
-                Spacer()
-                
-                Button {
-                    isNight.toggle()
-                } label: {
-                    WeatherButton(title: "ChangeDayTime", textColor: .blue, backgroundColor: .white)
-                }
-                
-                Spacer()
             }.onAppear(perform: viewModel.refresh)
         }
     }
@@ -68,20 +66,20 @@ struct WeatherDayView: View {
     
     var dayOfWeek: String
     var imageName: String
-    var temperature: Int
+    var temperature: Double
     
     var body: some View {
         VStack {
             Text(dayOfWeek)
                 .font(.system(size: 16, weight: .medium, design: .default))
                 .foregroundColor(.white)
-            Image(systemName: imageName)
+            Image(imageName)
                 .renderingMode(.original)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 40, height: 40)
-            Text("\(temperature)°")
-                .font(.system(size: 28, weight: .medium))
+                .frame(width: 50, height: 50)
+            Text(String(format: "%.1f°C", temperature))
+                .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.white)
         }
     }
@@ -89,32 +87,75 @@ struct WeatherDayView: View {
 
 struct BackgroundView: View {
     
-    @Binding var isNight: Bool
-    
     var body: some View {
-        LinearGradient(gradient: Gradient(colors: [isNight ? .black : .blue, isNight ? .gray : Color("lightBlue")]),
+        LinearGradient(gradient: Gradient(colors: [.blue, Color("lightBlue")]),
                        startPoint: .topLeading,
                        endPoint: .bottomTrailing)
             .edgesIgnoringSafeArea(.all)
     }
 }
 
-struct CityTextView: View {
+struct WhiteTextWithPadding: View {
     
-    var cityName: String
+    var text: String
+    var size: CGFloat = 32
     
     var body: some View {
-        Text(cityName)
-            .font(.system(size: 32, weight: .medium, design: .default))
+        Text(text)
+            .font(.system(size: size, weight: .medium, design: .default))
             .foregroundColor(.white)
-            .padding( )
+            .padding()
+    }
+}
+
+struct AdditionalInfoView: View {
+    
+    var selectedDay: DayEntry
+    
+    var body: some View {
+        HStack {
+            VStack {
+                AdditionalInfoTextView(label: "Min. Temp", value: String(format: "%.1f°C", selectedDay.min_temp))
+                AdditionalInfoTextView(label: "Sunrise", value: selectedDay.sunriseString)
+                AdditionalInfoTextView(label: "Chance of rain", value: "\(selectedDay.pop)%")
+            }
+            .padding(10)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
+            Spacer()
+            VStack {
+                AdditionalInfoTextView(label: "Max. Temp", value: String(format: "%.1f°C", selectedDay.max_temp))
+                AdditionalInfoTextView(label: "Sunset", value: selectedDay.sunsetString)
+                AdditionalInfoTextView(label: "Amount", value: String(format: "%.4f mm", selectedDay.precip))
+            }
+            .padding(10)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.white, lineWidth: 1))
+        }.padding(10)
+    }
+}
+
+struct AdditionalInfoTextView: View {
+    
+    var label: String
+    var value: String
+    
+    var body: some View {
+        HStack {
+            Text("\(label):")
+                .font(.system(size: 16, weight: .medium, design: .default))
+                .foregroundColor(.white)
+            Spacer()
+            Text(value)
+                .font(.system(size: 16, weight: .medium, design: .default))
+                .foregroundColor(.white)
+        }.padding(.bottom, 5)
     }
 }
 
 struct MainWeatherStatusView: View {
     
     var imageName: String
-    var temperature: String
+    var description: String
+    var temperature: Double
     
     var body: some View {
         VStack(spacing: 8) {
@@ -124,8 +165,12 @@ struct MainWeatherStatusView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 180, height: 180)
             
-            Text(temperature)
-                .font(.system(size: 70, weight: .medium))
+            Text(description)
+                .font(.system(size: 32, weight: .medium))
+                .foregroundColor(.white)
+            
+            Text(String(format: "%.1f°C", temperature))
+                .font(.system(size: 50, weight: .medium))
                 .foregroundColor(.white)
         }
         .padding(.bottom, 40)

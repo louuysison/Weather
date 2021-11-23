@@ -27,11 +27,13 @@ public final class WeatherService: NSObject {
     
     // https://api.weatherbit.io/v2.0/forecast/daily?lat={lat}&lon={lon}&key={API_KEY}
     private func makeDataRequest(forCoordinates coordinates: CLLocationCoordinate2D) {
-
+        // create urlString
         guard let urlString =
                 "https://api.weatherbit.io/v2.0/forecast/daily?lat=\(coordinates.latitude)&lon=\(coordinates.longitude)&key=\(API_KEY)"
                 .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return }
+        // convert urlString to url
         guard let url = URL(string: urlString) else { return }
+        // call API
         URLSession.shared.dataTask(with: url) { data, response, error in
             guard error == nil, let data = data else {
                 print("\(error?.localizedDescription ?? "ERROR")")
@@ -46,16 +48,17 @@ public final class WeatherService: NSObject {
 }
 
 extension WeatherService: CLLocationManagerDelegate {
+    // if location changes, call API
     public func locationManager(
         _ manager: CLLocationManager,
         didUpdateLocations locations: [CLLocation]
     ) {
         guard let location = locations.first else { return }
-        print("GOT LOCATION")
         print(location.coordinate)
         makeDataRequest(forCoordinates: location.coordinate)
     }
     
+    // get location, print error if it fails
     public func locationManager(
         _ manager: CLLocationManager,
         didFailWithError error: Error

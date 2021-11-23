@@ -14,7 +14,7 @@ struct APIResponse: Decodable {
 }
 
 // MARK: - DayEntry
-struct DayEntry: Decodable {
+struct DayEntry: Decodable, Identifiable {
     let moonrise_ts: Int
     let wind_cdir: String
     let rh: Int
@@ -39,6 +39,36 @@ struct DayEntry: Decodable {
     let datetime: String
     let temp, min_temp: Double
     let clouds_mid, clouds_low: Int
+    var id: String { valid_date }
+    // get date from String
+    var date: Date {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy'-'MM'-'dd"
+        let date = dateFormatter.date(from: datetime)
+        return date!
+    }
+    // get dayOfWeek from date
+    var dayOfWeek: String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EE"
+        return dateFormatter.string(from: date)
+    }
+    // get sunrise time as String
+    var sunriseString: String {
+        let date = Date(timeIntervalSince1970: Double(sunrise_ts))
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "hh:mm a"
+        let string = dateFormatter.string(from: date)
+        return string
+    }
+    // get sunset time as String
+    var sunsetString: String {
+        let date = Date(timeIntervalSince1970: Double(sunset_ts))
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "hh:mm a"
+        let string = dateFormatter.string(from: date)
+        return string
+    }
 }
 
 // MARK: - WeatherInfo
